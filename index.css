@@ -13,6 +13,7 @@
   z-index: 20;
   top: 5px;
   left: 5px;
+  display: none;
 }
 
 #key-info {
@@ -23,6 +24,7 @@
   background-color: rgba(0, 0, 0, 0.8);
   color: #fff;
   padding: 5px;
+  display: none;
 }
 
 #info {
@@ -35,7 +37,8 @@
   padding: 5px;
 }
 
-#info button, #info input {
+#info button,
+#info input {
   color: #000;
 }
 
