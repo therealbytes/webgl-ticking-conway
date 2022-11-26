@@ -30,6 +30,8 @@ $(document).ready(async function () {
 
   document.body.appendChild(gol.stats.domElement);
 
+  return;
+
   var gui = new dat.GUI();
 
 
