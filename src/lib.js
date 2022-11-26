@@ -26,7 +26,7 @@ function getShader(gl, src, type) {
 class Automaton {
 
 
-  constructor (canvas, zoom, p, torus, automaton, generator) {
+  constructor (canvas, zoom, p, torus, automaton, generator, width, height) {
 
     var gl;
 
@@ -52,7 +52,8 @@ class Automaton {
 
     this.zoom = zoom || 0;
 
-    this.setTorusMode(torus);
+    // this.setTorusMode(torus);
+    this.resize(width, height);
 
     gl.disable(gl.DEPTH_TEST);
 
