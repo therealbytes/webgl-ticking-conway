@@ -103,6 +103,10 @@ $(document).ready(async function () {
   $canvas.width(canvasSize);
   $canvas.height(canvasSize);
 
+  if (canvasSize / gridConfig.width > 4) {
+    $canvas.css("image-rendering", "pixelated");
+  }
+
   var nextUpdate = 0;
 
   var gol = new AutomatonLib.Automaton($canvas[0], 0, 0.5, false, undefined, undefined, gridConfig.width, gridConfig.height);
