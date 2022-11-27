@@ -14,6 +14,7 @@ var defaultConfig = {
   worldAddress: "0x0000000000000000000000000000000000000000",
   entityId: ethers.BigNumber.from("0x060d"),
   componentId: keccak256("conway.component.conwayState"),
+  delta: 1000,
 }
 
 function keccak256(data) {
@@ -30,6 +31,7 @@ function getConfig() {
     entityId: queryString.get("entityId") || defaultConfig.entityId,
     componentId: queryString.get("componentId") || defaultConfig.componentId,
     wsRpc: queryString.get("wsRpc") || defaultConfig.wsRpc,
+    delta: queryString.get("delta") || defaultConfig.delta,
   }
 }
 
@@ -129,7 +131,7 @@ $(document).ready(async function () {
 
     var datenow = Date.now();
     var newNextUpdate = Math.max(datenow, nextUpdate + gridConfig.period);
-    var timeout = newNextUpdate - datenow;
+    var timeout = newNextUpdate - datenow + config.delta;
     nextUpdate = newNextUpdate;
 
     setTimeout(() => {
