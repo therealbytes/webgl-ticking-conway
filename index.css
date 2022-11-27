@@ -10,7 +10,10 @@ body {
 #main-canvas {
   position: absolute;
   z-index: 0;
-  image-rendering: pixelated;
+  /* TODO: set this based on size and resolution */
+  /* image-rendering: pixelated; */
+  image-rendering: crisp-edges;
+  image-rendering: -moz-crisp-edges;
 }
 
 #stats {
