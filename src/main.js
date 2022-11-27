@@ -5,32 +5,110 @@
 
 import * as AutomatonLib from "./lib.js";
 
-const WIDTH = 100;
-const HEIGHT = 100;
-
 var dat = require("exdat");
 var $ = require("jquery");
+var ethers = require('ethers');
+
+var defaultConfig = {
+  wsRpc: "ws://localhost:8546",
+  worldAddress: "0x0000000000000000000000000000000000000000",
+  entityId: ethers.BigNumber.from("0x060d"),
+  componentId: keccak256("conway.component.conwayState"),
+}
 
 async function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function keccak256(data) {
+  return ethers.BigNumber.from(
+    ethers.utils.keccak256(ethers.utils.toUtf8Bytes(data))
+  ).toHexString();
+}
+
+function getConfig() {
+  var paramString = window.location.href.split('?')[1];
+  var queryString = new URLSearchParams(paramString);
+  return {
+    width: 32,
+    height: 32,
+    cellBitSize: 1,
+    period: 250 * 0.975,
+    worldAddress: queryString.get("worldAddress") || defaultConfig.worldAddress,
+    entityId: queryString.get("entityId") || defaultConfig.entityId,
+    componentId: queryString.get("componentId") || defaultConfig.componentId,
+    wsRpc: queryString.get("wsRpc") || defaultConfig.wsRpc,
+  }
+}
+
+function createProvider(config) {
+  return new ethers.providers.WebSocketProvider(config.wsRpc);
+}
+
+function createFilter(config) {
+  return {
+    address: config.worldAddress,
+    topics: [
+      keccak256("ComponentValueSet(uint256,address,uint256,bytes)")
+    ]
+  }
+}
+
+function unpackByte(b, n) {
+  if (n < 0 || n > 8 || 8 % n !== 0) {
+    throw new Error("invalid pack size");
+  }
+  const out = new Array(8 / n);
+  for (let ii = 0; ii < out.length; ii++) {
+    out[ii] = (b >> (8 - n * (ii + 1))) & ((1 << n) - 1);
+  }
+  return out;
+}
+
 $(document).ready(async function () {
   var $canvas = $("#main-canvas");
 
-  var gol = new AutomatonLib.Automaton($canvas[0], 0, 0.5, false, undefined, undefined, WIDTH, HEIGHT);
+  var config = getConfig();
+  var provider = createProvider(config);
+  var filter = createFilter(config);
 
-  for (var i = 0; i < 100; i++) {
-    const state = new Uint8Array(gol.statesize.x * gol.statesize.y);
-    state.fill(i % 2);
-    gol.setState(state);
-    gol.draw();
-    await sleep(1000);
-  }
+  console.log("Config", config);
+  console.log("Filter", filter);
 
-  document.body.appendChild(gol.stats.domElement);
+  var nextUpdate = 0;
+
+  var gol = new AutomatonLib.Automaton($canvas[0], 0, 0.5, false, undefined, undefined, config.width, config.height);
+
+  provider.on(filter, (event) => {
+
+    var componentId = ethers.BigNumber.from(event.topics[1]);
+    var entityId = ethers.BigNumber.from(event.topics[3]);
+    var data = event.data;
+
+    if (!componentId.eq(config.componentId) || !entityId.eq(config.entityId)) return;
+
+    var [encodedState] = ethers.utils.defaultAbiCoder.decode(["bytes"], data);
+    var packedState = ethers.utils.arrayify(encodedState);
+    var unpackedState = new Array(config.width * config.height);
+    for (let ii = 0; ii < packedState.length; ii++) {
+      unpackedState[ii] = unpackByte(packedState[ii], config.cellBitSize);
+    }
+    var state = unpackedState.flat();
+
+    const datenow = Date.now();
+    var newNextUpdate = Math.max(datenow, nextUpdate + config.period);
+    var timeout = newNextUpdate - datenow;
+    nextUpdate = newNextUpdate;
+
+    setTimeout(() => {
+      gol.setState(state);
+      gol.draw();
+    }, timeout);
+  });
 
   return;
+
+  document.body.appendChild(gol.stats.domElement);
 
   var gui = new dat.GUI();
 

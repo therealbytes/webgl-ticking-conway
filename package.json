@@ -37,6 +37,7 @@
     "watchify": "*"
   },
   "dependencies": {
+    "ethers": "^5.7.2",
     "exdat": "^0.6.2",
     "jquery": "^3.1.0",
     "stats.js": "0.16.0",
