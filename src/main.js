@@ -26,14 +26,40 @@ function getConfig() {
   var paramString = window.location.href.split('?')[1];
   var queryString = new URLSearchParams(paramString);
   return {
-    width: 32,
-    height: 32,
-    cellBitSize: 1,
-    period: 250 * 0.975,
     worldAddress: queryString.get("worldAddress") || defaultConfig.worldAddress,
     entityId: queryString.get("entityId") || defaultConfig.entityId,
     componentId: queryString.get("componentId") || defaultConfig.componentId,
     wsRpc: queryString.get("wsRpc") || defaultConfig.wsRpc,
+  }
+}
+
+async function getGridConfig(provider, config) {
+  var componentId = keccak256("conway.component.gridConfig");
+  var worldContract = new ethers.Contract(
+    config.worldAddress,
+    ["function getComponent(uint256) view returns (address)"],
+    provider
+  );
+  var componentAddr = await worldContract.getComponent(componentId);
+  var componentContract = new ethers.Contract(
+    componentAddr,
+    ["function getValue(uint256) view returns (uint8, uint8, bool, bool, bool, int32, int32, int32, int32)"],
+    provider
+  );
+  var [stepsPerTick,
+    cellBitSize,
+    drawable,
+    pausable,
+    devMode,
+    dimX,
+    dimY,
+    posX,
+    posy] = await componentContract.getValue(config.entityId);
+  return {
+    width: dimX,
+    height: dimY,
+    cellBitSize: cellBitSize,
+    period: 1000 / stepsPerTick * 0.975,
   }
 }
 
@@ -54,7 +80,7 @@ function unpackByte(b, n) {
   if (n < 0 || n > 8 || 8 % n !== 0) {
     throw new Error("invalid pack size");
   }
-  const out = new Array(8 / n);
+  var out = new Array(8 / n);
   for (let ii = 0; ii < out.length; ii++) {
     out[ii] = (b >> (8 - n * (ii + 1))) & ((1 << n) - 1);
   }
@@ -67,8 +93,10 @@ $(document).ready(async function () {
   var config = getConfig();
   var provider = createProvider(config);
   var filter = createFilter(config);
+  var gridConfig = await getGridConfig(provider, config);
 
   console.log("Config", config);
+  console.log("Grid config", gridConfig);
   console.log("Filter", filter);
 
   var canvasSize = Math.min(window.innerWidth, window.innerHeight);
@@ -77,7 +105,7 @@ $(document).ready(async function () {
 
   var nextUpdate = 0;
 
-  var gol = new AutomatonLib.Automaton($canvas[0], 0, 0.5, false, undefined, undefined, config.width, config.height);
+  var gol = new AutomatonLib.Automaton($canvas[0], 0, 0.5, false, undefined, undefined, gridConfig.width, gridConfig.height);
 
   provider.on(filter, (event) => {
 
@@ -89,14 +117,14 @@ $(document).ready(async function () {
 
     var [encodedState] = ethers.utils.defaultAbiCoder.decode(["bytes"], data);
     var packedState = ethers.utils.arrayify(encodedState);
-    var unpackedState = new Array(config.width * config.height);
+    var unpackedState = new Array(gridConfig.width * gridConfig.height);
     for (let ii = 0; ii < packedState.length; ii++) {
-      unpackedState[ii] = unpackByte(packedState[ii], config.cellBitSize);
+      unpackedState[ii] = unpackByte(packedState[ii], gridConfig.cellBitSize);
     }
     var state = unpackedState.flat();
 
-    const datenow = Date.now();
-    var newNextUpdate = Math.max(datenow, nextUpdate + config.period);
+    var datenow = Date.now();
+    var newNextUpdate = Math.max(datenow, nextUpdate + gridConfig.period);
     var timeout = newNextUpdate - datenow;
     nextUpdate = newNextUpdate;
 
