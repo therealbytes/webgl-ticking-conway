@@ -16,10 +16,6 @@ var defaultConfig = {
   componentId: keccak256("conway.component.conwayState"),
 }
 
-async function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
 function keccak256(data) {
   return ethers.BigNumber.from(
     ethers.utils.keccak256(ethers.utils.toUtf8Bytes(data))
