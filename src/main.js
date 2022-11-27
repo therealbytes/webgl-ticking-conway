@@ -75,6 +75,10 @@ $(document).ready(async function () {
   console.log("Config", config);
   console.log("Filter", filter);
 
+  var canvasSize = Math.min(window.innerWidth, window.innerHeight);
+  $canvas.width(canvasSize);
+  $canvas.height(canvasSize);
+
   var nextUpdate = 0;
 
   var gol = new AutomatonLib.Automaton($canvas[0], 0, 0.5, false, undefined, undefined, config.width, config.height);
