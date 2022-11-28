@@ -61,7 +61,7 @@ async function getGridConfig(provider, config) {
     width: dimX,
     height: dimY,
     cellBitSize: cellBitSize,
-    period: 1000 / stepsPerTick * 0.975,
+    period: 1000 / stepsPerTick,
   }
 }
 
