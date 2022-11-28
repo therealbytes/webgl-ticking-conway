@@ -235,7 +235,9 @@ class Automaton {
     var gl = this.gl;
     var rgba = new Uint8Array(this.statesize.x * this.statesize.y * 4);
     for (var i = 0; i < state.length; i++) {
-      var ii = i * 4;
+      // Invert y axis to match phaser implementation
+      var j = (this.statesize.y - 1 - Math.floor(i / this.statesize.x)) * this.statesize.x + i % this.statesize.x;
+      var ii = j * 4;
       rgba[ii] = rgba[ii + 1] = rgba[ii + 2] = state[i] ? 255 : 0;
       rgba[ii + 3] = 255;
     }
