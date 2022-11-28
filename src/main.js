@@ -121,9 +121,10 @@ $(document).ready(async function () {
 
     if (!componentId.eq(config.componentId) || !entityId.eq(config.entityId)) return;
 
-    var [encodedState] = ethers.utils.defaultAbiCoder.decode(["bytes"], data);
-    var packedState = ethers.utils.arrayify(encodedState);
-    var unpackedState = new Array(gridConfig.width * gridConfig.height);
+    var [data] = ethers.utils.defaultAbiCoder.decode(["bytes"], data);
+    var [data] = ethers.utils.defaultAbiCoder.decode(["bytes"], data);
+    var packedState = ethers.utils.arrayify(data);
+    var unpackedState = new Array(packedState.length);
     for (let ii = 0; ii < packedState.length; ii++) {
       unpackedState[ii] = unpackByte(packedState[ii], gridConfig.cellBitSize);
     }
