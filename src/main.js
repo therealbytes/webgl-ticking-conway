@@ -105,7 +105,7 @@ $(document).ready(async function () {
   $canvas.width(canvasSize);
   $canvas.height(canvasSize);
 
-  if (canvasSize / gridConfig.width > 4) {
+  if (canvasSize / gridConfig.width > 2) {
     $canvas.css("image-rendering", "pixelated");
   }
 
