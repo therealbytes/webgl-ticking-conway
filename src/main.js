@@ -10,8 +10,8 @@ var $ = require("jquery");
 var ethers = require('ethers');
 
 var defaultConfig = {
-  wsRpc: "ws://localhost:8546",
-  worldAddress: "0x0000000000000000000000000000000000000000",
+  wsRpc: "wss://l2.infra.conway.usebasic.dev",
+  worldAddress: "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
   entityId: ethers.BigNumber.from("0x060d"),
   componentId: keccak256("conway.component.conwayState"),
   delta: 1000,
