@@ -5,7 +5,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "watchify src/main.js -o bundle.js --debug --verbose & st --no-cache",
-    "build": "browserify src/main.js -o bundle.js -p [minifyify --no-map] --verbose",
+    "build": "browserify src/main.js -o dist/bundle.js -p [minifyify --no-map] --verbose && cp index.html index.css ./dist",
     "lint": "eslint src"
   },
   "browserify": {
