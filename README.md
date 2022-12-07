@@ -1,23 +1,18 @@
-[![Build Status](https://travis-ci.org/protolambda/automata.svg?branch=master)](https://travis-ci.org/protolambda/automata)
+A WebGL visualizer for [ticking-conway](https://github.com/therealbytes/ticking-conway) built on top of [https://github.com/protolambda/automata](https://github.com/protolambda/automata).
 
-# Cellular automata
+**Run locally**
 
-Cellular automata sandbox in JS(ES6) + WebGL.
+`yarn install`
 
-Implemented cellular automata:
-- Conway's Game of Life (GOL)
-- highlife
-- day and night
-- no-death
-- seeds
-- replicator
+`yarn dev`
 
+Go to
 
-## Demo
+[http://localhost:1337/index.html?worldAddress=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512&wsRpc=wss://l2.infra.conway.usebasic.dev](http://localhost:1337/index.html?worldAddress=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512&wsRpc=wss://l2.infra.conway.usebasic.dev)
 
-Online demo at: http://automata.protolambda.com/
+to view the live demo board or to
 
+`http://localhost:1337/index.html?worldAddress=<WORLD_ADDRESS>&wsRpc=ws://localhost:9546`
 
-## License
+to view your local board.
 
-MIT License, see [LICENSE](LICENSE), located in the root of this repository.
