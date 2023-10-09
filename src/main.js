@@ -10,11 +10,8 @@ var $ = require("jquery");
 var ethers = require('ethers');
 
 var defaultConfig = {
-  wsRpc: "ws://localhost:8546",
-  worldAddress: "0x0000000000000000000000000000000000000000",
-  entityId: ethers.BigNumber.from("0x060d"),
-  componentId: keccak256("conway.component.conwayState"),
-  delta: 1000,
+  wsRpc: "ws://localhost:9546",
+  contractAddress: "0x0000000000000000000000000000000000000000",
 }
 
 function keccak256(data) {
@@ -27,41 +24,22 @@ function getConfig() {
   var paramString = window.location.href.split('?')[1];
   var queryString = new URLSearchParams(paramString);
   return {
-    worldAddress: queryString.get("worldAddress") || defaultConfig.worldAddress,
-    entityId: queryString.get("entityId") || defaultConfig.entityId,
-    componentId: queryString.get("componentId") || defaultConfig.componentId,
     wsRpc: queryString.get("wsRpc") || defaultConfig.wsRpc,
+    contractAddress: queryString.get("contractAddress") || defaultConfig.contractAddress,
     delta: queryString.get("delta") || defaultConfig.delta,
   }
 }
 
 async function getGridConfig(provider, config) {
-  var componentId = keccak256("conway.component.gridConfig");
-  var worldContract = new ethers.Contract(
-    config.worldAddress,
-    ["function getComponent(uint256) view returns (address)"],
+  var contract = new ethers.Contract(
+    config.contractAddress,
+    ["function dimensions() view returns (uint32,uint32)"],
     provider
   );
-  var componentAddr = await worldContract.getComponent(componentId);
-  var componentContract = new ethers.Contract(
-    componentAddr,
-    ["function getValue(uint256) view returns (uint8, uint8, bool, bool, bool, int32, int32, int32, int32)"],
-    provider
-  );
-  var [stepsPerTick,
-    cellBitSize,
-    drawable,
-    pausable,
-    devMode,
-    dimX,
-    dimY,
-    posX,
-    posy] = await componentContract.getValue(config.entityId);
+  var [dimX, dimY] = await contract.dimensions();
   return {
     width: dimX,
     height: dimY,
-    cellBitSize: cellBitSize,
-    period: 1000 / stepsPerTick,
   }
 }
 
@@ -71,9 +49,9 @@ function createProvider(config) {
 
 function createFilter(config) {
   return {
-    address: config.worldAddress,
+    address: config.contractAddress,
     topics: [
-      keccak256("ComponentValueSet(uint256,address,uint256,bytes)")
+      keccak256("Tick(uint256,uint256,bytes32)")
     ]
   }
 }
@@ -83,10 +61,21 @@ function unpackByte(b, n) {
     throw new Error("invalid pack size");
   }
   var out = new Array(8 / n);
-  for (let ii = 0; ii < out.length; ii++) {
+  for (var ii = 0; ii < out.length; ii++) {
     out[ii] = (b >> (8 - n * (ii + 1))) & ((1 << n) - 1);
   }
   return out;
+}
+
+function overrideChunk(config, chunkX, chunkY, state, chunk) {
+  for (var y = 0; y < 16; y++) {
+    for (var x = 0; x < 16; x++) {
+      var [absX, absY] = [chunkX * 16 + x, chunkY * 16 + y];
+      var chunkIdx = y * 16 + x;
+      var stateIdx = absY * config.width + absX;
+      state[stateIdx] = chunk[chunkIdx];
+    }
+  }
 }
 
 $(document).ready(async function () {
@@ -109,36 +98,36 @@ $(document).ready(async function () {
     $canvas.css("image-rendering", "pixelated");
   }
 
-  var nextUpdate = 0;
-
   var gol = new AutomatonLib.Automaton($canvas[0], 0, 0.5, false, undefined, undefined, gridConfig.width, gridConfig.height);
+  var state = new Array(gridConfig.width * gridConfig.height);
+  var updated = new Array(gridConfig.width / 16 * gridConfig.height / 16);
+  for (var ii = 0; ii < updated.length; ii++) {
+    updated[ii] = false;
+  }
 
   provider.on(filter, (event) => {
+    var chunkX = ethers.BigNumber.from(event.topics[1]).toNumber();
+    var chunkY = ethers.BigNumber.from(event.topics[2]).toNumber();
+    const packedChunk = new Uint8Array(Buffer.from(event.data.replace(/^0x/, ''), 'hex'));
 
-    var componentId = ethers.BigNumber.from(event.topics[1]);
-    var entityId = ethers.BigNumber.from(event.topics[3]);
-    var data = event.data;
+    console.log("Chunk", chunkX, chunkY, event.data);
 
-    if (!componentId.eq(config.componentId) || !entityId.eq(config.entityId)) return;
-
-    var [data] = ethers.utils.defaultAbiCoder.decode(["bytes"], data);
-    var [data] = ethers.utils.defaultAbiCoder.decode(["bytes"], data);
-    var packedState = ethers.utils.arrayify(data);
-    var unpackedState = new Array(packedState.length);
-    for (let ii = 0; ii < packedState.length; ii++) {
-      unpackedState[ii] = unpackByte(packedState[ii], gridConfig.cellBitSize);
+    var unpackedChunk = new Array(packedChunk.length);
+    for (var ii = 0; ii < packedChunk.length; ii++) {
+      unpackedChunk[ii] = unpackByte(packedChunk[ii], 1);
     }
-    var state = unpackedState.flat();
+    var chunk = unpackedChunk.flat();
 
-    var datenow = Date.now();
-    var newNextUpdate = Math.max(datenow, nextUpdate + gridConfig.period);
-    var timeout = newNextUpdate - datenow + config.delta;
-    nextUpdate = newNextUpdate;
+    overrideChunk(gridConfig, chunkX, chunkY, state, chunk);
+    updated[chunkY * gridConfig.width / 16 + chunkX] = true;
 
-    setTimeout(() => {
+    if (updated.every((v) => v)) {
       gol.setState(state);
       gol.draw();
-    }, timeout);
+      for (var ii = 0; ii < updated.length; ii++) {
+        updated[ii] = false;
+      }
+    }
   });
 
   return;
