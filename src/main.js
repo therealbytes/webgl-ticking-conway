@@ -51,7 +51,7 @@ function createFilter(config) {
   return {
     address: config.contractAddress,
     topics: [
-      keccak256("Tick(uint256,uint256,bytes32)")
+      keccak256("ChunkTicked(uint256,uint256,bytes32)")
     ]
   }
 }
